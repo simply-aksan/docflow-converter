@@ -1,0 +1,20 @@
+# Node / Frontend
+client/node_modules/
+client/dist/
+client/.env.local
+client/.env.*.local
+
+# Python / Backend
+server/venv/
+server/env/
+server/__pycache__/
+server/*/__pycache__/
+server/*/*/__pycache__/
+server/storage/
+server/.env
+
+# General
+.DS_Store
+*.log
+.vscode/
+.idea/
