@@ -8,8 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     fonts-dejavu-core \
     fonts-freefont-ttf \
+    fontconfig \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Pre-cache system fonts and pre-warm LibreOffice runtime caches at build time
+RUN fc-cache -fv && \
+    mkdir -p /tmp/lo_profile_template && \
+    libreoffice -env:UserInstallation=file:///tmp/lo_profile_template --headless --terminate_after_init || true
 
 WORKDIR /app
 

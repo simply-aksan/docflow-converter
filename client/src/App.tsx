@@ -20,6 +20,13 @@ export const App: React.FC = () => {
 
   const theme = TOOL_THEMES[activeTool];
 
+  // Proactive background warm-up: immediately wakes up Render free tier upon page visit
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/ping`).catch(() => {
+      // Ignore background wake-up ping errors
+    });
+  }, []);
+
   useEffect(() => {
     let timer: any = null;
     if (isConverting) {
