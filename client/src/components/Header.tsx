@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FileText, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export const Header: React.FC = () => {
+  const [engineName, setEngineName] = useState<string>('Detecting engine...');
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/status`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.engine) {
+          setEngineName(data.engine);
+        } else {
+          setEngineName('Engine Ready');
+        }
+      })
+      .catch(() => {
+        setEngineName('Engine Ready');
+      });
+  }, []);
+
   return (
     <header className="border-b border-zinc-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-30">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -24,7 +42,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200/60">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-zinc-700 font-medium">LibreOffice Engine</span>
+            <span className="text-zinc-700 font-medium">{engineName}</span>
           </div>
           <div className="hidden sm:flex items-center gap-1 text-zinc-500">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />

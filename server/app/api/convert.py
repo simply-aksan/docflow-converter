@@ -7,8 +7,7 @@ from typing import List
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, status
 from fastapi.responses import FileResponse, StreamingResponse
 from app.config import settings
-from app.services.converter import convert_word_to_pdf, find_libreoffice_binary
-from app.services.cleaner import cleanup_old_files
+from app.services.converter import convert_word_to_pdf, find_libreoffice_binary, has_ms_word
 
 router = APIRouter(prefix="/api", tags=["Converter"])
 
@@ -24,13 +23,23 @@ def validate_word_file(file: UploadFile):
 
 @router.get("/status")
 def get_service_status():
-    """Checks service health and whether LibreOffice conversion engine is available."""
+    """Checks service health and reports active conversion engine."""
     lo_bin = find_libreoffice_binary()
+    word_available = has_ms_word()
+    
+    if lo_bin:
+        engine = "LibreOffice Headless"
+    elif word_available:
+        engine = "Microsoft Word (Windows Native)"
+    else:
+        engine = "None (Ready for Docker / Render)"
+
     return {
         "status": "online",
-        "engine": "LibreOffice Headless",
-        "engine_installed": lo_bin is not None,
-        "engine_path": lo_bin or "Not installed locally. Ready for Docker/Render deployment."
+        "engine": engine,
+        "engine_installed": lo_bin is not None or word_available,
+        "libreoffice_path": lo_bin,
+        "ms_word_available": word_available
     }
 
 @router.post("/convert/single")
