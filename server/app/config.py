@@ -13,17 +13,15 @@ class Settings(BaseSettings):
     FILE_RETENTION_MINUTES: int = 30
     
     # CORS settings
-    # Can be a comma-separated string in env, e.g. "https://my-app.vercel.app,http://localhost:5173"
-    ALLOWED_ORIGINS: str = os.getenv(
-        "ALLOWED_ORIGINS", 
-        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,*"
-    )
+    # Default to allow all in development, or comma-separated list
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
     
     @property
     def cors_origins(self) -> List[str]:
-        if self.ALLOWED_ORIGINS.strip() == "*":
+        raw = self.ALLOWED_ORIGINS.strip()
+        if raw == "*" or "*" in raw.split(","):
             return ["*"]
-        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
     class Config:
         env_file = ".env"
