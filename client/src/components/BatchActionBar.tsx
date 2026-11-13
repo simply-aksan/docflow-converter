@@ -6,6 +6,7 @@ interface BatchActionBarProps {
   totalFiles: number;
   completedCount: number;
   isConverting: boolean;
+  convertingSeconds?: number;
   zipUrl?: string;
   onConvertAll: () => void;
   onClearAll: () => void;
@@ -15,6 +16,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
   totalFiles,
   completedCount,
   isConverting,
+  convertingSeconds = 0,
   zipUrl,
   onConvertAll,
   onClearAll,
@@ -27,12 +29,14 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
       <div className="pointer-events-auto bg-zinc-900 text-white rounded-2xl shadow-dock border border-zinc-800 p-2 sm:p-2.5 flex items-center justify-between gap-4 max-w-xl w-full">
         {/* Left: Summary */}
         <div className="pl-3 flex items-center gap-2 text-xs font-mono">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span className={`w-2 h-2 rounded-full ${isConverting ? 'bg-amber-400 animate-ping' : 'bg-blue-500 animate-pulse'}`} />
           <span className="text-zinc-300">
             {allCompleted
-              ? `Ready (${completedCount}/${totalFiles} converted)`
+              ? `Done (${completedCount}/${totalFiles} converted)`
               : isConverting
-              ? `Processing files...`
+              ? convertingSeconds > 7
+                ? `Waking up server (${convertingSeconds}s)...`
+                : `Processing batch (${convertingSeconds}s)...`
               : `${totalFiles} ${totalFiles === 1 ? 'file' : 'files'} selected`}
           </span>
         </div>
@@ -53,7 +57,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
               onClick={onConvertAll}
               className="inline-flex items-center gap-2 text-xs font-semibold bg-white text-zinc-950 hover:bg-zinc-100 px-4 py-2.5 rounded-xl shadow-sm transition-all duration-150"
             >
-              <span>Convert to PDF</span>
+              <span>Convert All to PDF</span>
               <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           )}
@@ -61,7 +65,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
           {isConverting && (
             <div className="inline-flex items-center gap-2 text-xs font-medium bg-zinc-800 text-zinc-200 px-4 py-2.5 rounded-xl border border-zinc-700">
               <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span>Converting...</span>
+              <span>{convertingSeconds > 7 ? 'Warming up...' : 'Converting...'}</span>
             </div>
           )}
 

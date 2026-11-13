@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Dropzone } from './components/Dropzone';
 import { FileCard } from './components/FileCard';
@@ -6,13 +6,28 @@ import { BatchActionBar } from './components/BatchActionBar';
 import { TrustBadges } from './components/TrustBadges';
 import type { BatchFileItem, ApiConvertResponse } from './types';
 import { API_BASE_URL } from './config';
-import { AlertCircle, FileCheck2 } from 'lucide-react';
+import { AlertCircle, FileCheck2, Info } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [files, setFiles] = useState<BatchFileItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
+  const [convertingSeconds, setConvertingSeconds] = useState(0);
   const [zipUrl, setZipUrl] = useState<string | undefined>(undefined);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  // Timer while converting to inform user during cold starts
+  useEffect(() => {
+    let timer: any = null;
+    if (isConverting) {
+      setConvertingSeconds(0);
+      timer = setInterval(() => {
+        setConvertingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setConvertingSeconds(0);
+    }
+    return () => clearInterval(timer);
+  }, [isConverting]);
 
   const handleFilesSelected = (selectedFiles: File[]) => {
     setGlobalError(null);
@@ -135,6 +150,16 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {/* Cold Start Notice (when conversion takes > 7 seconds) */}
+        {isConverting && convertingSeconds > 7 && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-amber-900 text-xs font-mono">
+            <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <span className="font-semibold">Cloud container cold start:</span> The free-tier backend instance spins down after inactivity and takes ~30 seconds to wake up for the first conversion. Subsequent conversions will run much faster.
+            </div>
+          </div>
+        )}
+
         {/* Dropzone */}
         <Dropzone onFilesSelected={handleFilesSelected} isConverting={isConverting} />
 
@@ -175,6 +200,7 @@ export const App: React.FC = () => {
           totalFiles={files.length}
           completedCount={completedCount}
           isConverting={isConverting}
+          convertingSeconds={convertingSeconds}
           zipUrl={zipUrl}
           onConvertAll={handleConvertAll}
           onClearAll={handleClearAll}
