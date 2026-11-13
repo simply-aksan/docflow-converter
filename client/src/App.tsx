@@ -222,7 +222,10 @@ export const App: React.FC = () => {
       {/* Minimalist Footer */}
       <footer className="border-t border-[#E4E4E7] bg-white py-6 mt-12 transition-colors duration-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#52525B] font-mono">
-          <div>DocFlow — Universal Document Converter</div>
+          <div className="flex items-center gap-2">
+            <img src="/logo-icon.png" alt="DocFlow" className="w-4 h-4 object-contain" />
+            <span>DocFlow — Universal Document Converter</span>
+          </div>
           <div>Word • Excel • PowerPoint to PDF</div>
         </div>
       </footer>
