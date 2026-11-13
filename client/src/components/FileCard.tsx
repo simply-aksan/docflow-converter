@@ -24,23 +24,23 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
     const lower = item.name.toLowerCase();
     if (lower.endsWith('.xlsx') || lower.endsWith('.xls') || lower.endsWith('.csv') || lower.endsWith('.ods')) {
       return {
-        bg: 'bg-emerald-50 border-emerald-200/70 text-emerald-700',
-        badge: 'bg-emerald-600',
+        bg: 'bg-[#F0FDF4] border-[#BBF7D0] text-[#16A34A]',
+        badge: 'bg-[#16A34A]',
         icon: Table,
         label: ext,
       };
     }
     if (lower.endsWith('.pptx') || lower.endsWith('.ppt') || lower.endsWith('.odp')) {
       return {
-        bg: 'bg-orange-50 border-orange-200/70 text-orange-700',
-        badge: 'bg-orange-600',
+        bg: 'bg-[#FFF7ED] border-[#FED7AA] text-[#EA580C]',
+        badge: 'bg-[#EA580C]',
         icon: Presentation,
         label: ext,
       };
     }
     return {
-      bg: 'bg-blue-50 border-blue-200/70 text-blue-700',
-      badge: 'bg-blue-600',
+      bg: 'bg-[#EFF6FF] border-[#BFDBFE] text-[#2563EB]',
+      badge: 'bg-[#2563EB]',
       icon: FileText,
       label: ext,
     };
@@ -53,7 +53,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
     switch (item.status) {
       case 'converting':
         return (
-          <div className="flex items-center gap-1.5 text-xs font-mono text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/80">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             <span>Rendering PDF...</span>
           </div>
@@ -74,7 +74,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
         );
       default:
         return (
-          <div className="text-xs font-mono text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-md border border-zinc-200">
+          <div className="text-xs font-mono text-[#52525B] bg-zinc-100 px-2.5 py-1 rounded-md border border-[#E4E4E7]">
             Queued
           </div>
         );
@@ -82,7 +82,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
   };
 
   return (
-    <div className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-zinc-200/90 hover:border-zinc-300 shadow-clean transition-all duration-150">
+    <div className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-[#E4E4E7] hover:border-[#A1A1AA] shadow-clean transition-all duration-150">
       {/* File Info */}
       <div className="flex items-center gap-3.5 min-w-0">
         <div className={`relative shrink-0 w-11 h-11 rounded-lg border flex items-center justify-center font-bold text-xs ${formatStyle.bg}`}>
@@ -94,13 +94,13 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-zinc-900 truncate" title={item.name}>
+            <p className="text-sm font-medium text-[#09090B] truncate" title={item.name}>
               {item.name}
             </p>
             {item.status === 'completed' && (
               <span className="shrink-0 flex items-center gap-1 text-[11px] font-mono text-zinc-400">
                 <ArrowRight className="w-3 h-3 text-zinc-400" />
-                <span className="text-zinc-600">{item.convertedName}</span>
+                <span className="text-[#52525B]">{item.convertedName}</span>
               </span>
             )}
           </div>
@@ -121,7 +121,7 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
           <a
             href={`${API_BASE_URL}${item.downloadUrl}`}
             download={item.convertedName || 'document.pdf'}
-            className="inline-flex items-center gap-1.5 text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-800 px-3 py-1.5 rounded-lg shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-[#09090B] text-white hover:bg-zinc-800 px-3 py-1.5 rounded-lg shadow-sm transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download PDF</span>

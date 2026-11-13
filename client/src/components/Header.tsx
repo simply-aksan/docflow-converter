@@ -21,32 +21,37 @@ export const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="border-b border-zinc-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-30">
+    <header className="border-b border-[#E4E4E7] bg-white/80 backdrop-blur-md sticky top-0 z-30 transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Brand Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-[#E11D48] text-white flex items-center justify-center shadow-sm transition-transform duration-200 hover:scale-105">
             <FileText className="w-5 h-5 text-white stroke-[2.2]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-zinc-900 tracking-tight text-base font-sans">
+              <span className="font-bold text-[#09090B] tracking-tight text-base font-sans">
                 DocFlow
               </span>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 font-medium border border-zinc-200">
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 text-[#52525B] font-medium border border-[#E4E4E7]">
                 v1.0
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-50 border border-zinc-200/60">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-zinc-700 font-medium">{engineName}</span>
+        {/* Status Badges */}
+        <div className="flex items-center gap-3 sm:gap-4 text-xs font-mono">
+          {/* Active Engine Badge */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E4E4E7] text-[#52525B]">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="font-medium text-[#09090B]">{engineName}</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1 text-zinc-500">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Zero Retention</span>
+
+          {/* Zero Retention Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D]">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#15803D]" />
+            <span className="font-medium">Zero Retention</span>
           </div>
         </div>
       </div>

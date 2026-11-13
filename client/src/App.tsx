@@ -4,7 +4,7 @@ import { Dropzone } from './components/Dropzone';
 import { FileCard } from './components/FileCard';
 import { BatchActionBar } from './components/BatchActionBar';
 import { TrustBadges } from './components/TrustBadges';
-import { ToolTabs } from './components/ToolTabs';
+import { ToolTabs, TOOL_THEMES } from './components/ToolTabs';
 import type { ToolType } from './components/ToolTabs';
 import type { BatchFileItem, ApiConvertResponse } from './types';
 import { API_BASE_URL } from './config';
@@ -17,6 +17,8 @@ export const App: React.FC = () => {
   const [convertingSeconds, setConvertingSeconds] = useState(0);
   const [zipUrl, setZipUrl] = useState<string | undefined>(undefined);
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const theme = TOOL_THEMES[activeTool];
 
   useEffect(() => {
     let timer: any = null;
@@ -122,20 +124,27 @@ export const App: React.FC = () => {
   const completedCount = files.filter((f) => f.status === 'completed').length;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-zinc-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAFAFA] text-[#09090B] flex flex-col font-sans selection:bg-[#09090B] selection:text-white">
       <Header />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Hero Section */}
         <div className="text-center max-w-2xl mx-auto mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-200/70 text-zinc-800 text-xs font-mono font-medium mb-3">
-            <Layers className="w-3.5 h-3.5 text-zinc-700" />
+          <div
+            style={{
+              backgroundColor: theme.tint,
+              borderColor: theme.border,
+              color: theme.primary,
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium mb-3 border transition-colors duration-200"
+          >
+            <Layers className="w-3.5 h-3.5" style={{ color: theme.primary }} />
             <span>Universal Office to PDF Suite</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#09090B] mb-2">
             Convert Office Documents to PDF.
           </h1>
-          <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
+          <p className="text-sm sm:text-base text-[#52525B] leading-relaxed">
             Convert Word documents, Excel spreadsheets, and PowerPoint presentations into crisp, printable PDFs with exact layout reproduction.
           </p>
         </div>
@@ -163,14 +172,14 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Adaptive Dropzone */}
+        {/* Dynamic Themed Dropzone */}
         <Dropzone activeTool={activeTool} onFilesSelected={handleFilesSelected} isConverting={isConverting} />
 
         {/* File Queue Section */}
         {files.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-500 font-semibold">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#52525B] font-semibold">
                 Uploaded Files ({files.length})
               </h3>
               {completedCount > 0 && (
@@ -211,8 +220,8 @@ export const App: React.FC = () => {
       )}
 
       {/* Minimalist Footer */}
-      <footer className="border-t border-zinc-200/80 bg-white py-6 mt-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400 font-mono">
+      <footer className="border-t border-[#E4E4E7] bg-white py-6 mt-12 transition-colors duration-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#52525B] font-mono">
           <div>DocFlow — Universal Document Converter</div>
           <div>Word • Excel • PowerPoint to PDF</div>
         </div>

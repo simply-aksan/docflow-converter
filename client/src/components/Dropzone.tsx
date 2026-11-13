@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, FileType } from 'lucide-react';
+import { TOOL_THEMES } from './ToolTabs';
 import type { ToolType } from './ToolTabs';
 
 interface DropzoneProps {
@@ -11,6 +12,7 @@ interface DropzoneProps {
 export const Dropzone: React.FC<DropzoneProps> = ({ activeTool, onFilesSelected, isConverting }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const theme = TOOL_THEMES[activeTool];
 
   const getToolConfig = () => {
     switch (activeTool) {
@@ -82,11 +84,13 @@ export const Dropzone: React.FC<DropzoneProps> = ({ activeTool, onFilesSelected,
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => !isConverting && fileInputRef.current?.click()}
-      className={`relative group cursor-pointer transition-all duration-200 rounded-2xl border-2 border-dashed p-8 sm:p-12 text-center overflow-hidden ${
-        isDragOver
-          ? 'border-zinc-900 bg-zinc-100/80 scale-[0.995]'
-          : 'border-zinc-300 hover:border-zinc-500 bg-white hover:bg-zinc-50/50 shadow-clean'
-      } ${isConverting ? 'opacity-60 cursor-not-allowed' : ''}`}
+      style={{
+        borderColor: isDragOver ? theme.primary : theme.border,
+        backgroundColor: isDragOver ? theme.tint : '#FFFFFF',
+      }}
+      className={`relative group cursor-pointer transition-all duration-200 rounded-2xl border-2 border-dashed p-8 sm:p-12 text-center overflow-hidden shadow-clean hover:shadow-md ${
+        isConverting ? 'opacity-60 cursor-not-allowed' : ''
+      }`}
     >
       <input
         ref={fileInputRef}
@@ -98,27 +102,47 @@ export const Dropzone: React.FC<DropzoneProps> = ({ activeTool, onFilesSelected,
         disabled={isConverting}
       />
 
+      {/* Subtle radial dot matrix */}
       <div className="absolute inset-0 dropzone-pattern opacity-40 pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-200 ${
-          isDragOver ? 'bg-zinc-900 text-white scale-110' : 'bg-zinc-100 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white'
-        }`}>
+        {/* Upload Icon Container */}
+        <div
+          style={{
+            backgroundColor: theme.tint,
+            color: theme.primary,
+          }}
+          className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200 ${
+            isDragOver ? 'scale-110 shadow-sm' : 'group-hover:scale-105'
+          }`}
+        >
           <UploadCloud className="w-7 h-7 stroke-[1.8]" />
         </div>
 
-        <h3 className="text-lg font-semibold text-zinc-900 mb-1 tracking-tight">
+        {/* Heading */}
+        <h3 className="text-lg font-semibold text-[#09090B] mb-1 tracking-tight">
           {config.title.split('browse')[0]}
-          <span className="text-zinc-600 underline underline-offset-4 decoration-zinc-300 group-hover:decoration-zinc-700">
+          <span
+            style={{ color: theme.primary }}
+            className="font-semibold underline underline-offset-4 decoration-current transition-colors duration-200"
+          >
             browse
           </span>
         </h3>
-        <p className="text-xs text-zinc-500 max-w-md mb-4">
+        <p className="text-xs text-[#52525B] max-w-md mb-4 leading-relaxed">
           {config.subtitle}
         </p>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100/90 text-xs font-mono text-zinc-600 border border-zinc-200">
-          <FileType className="w-3.5 h-3.5 text-zinc-500" />
+        {/* Contextual Badge */}
+        <div
+          style={{
+            backgroundColor: theme.tint,
+            borderColor: theme.border,
+            color: theme.primary,
+          }}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium border transition-colors duration-200"
+        >
+          <FileType className="w-3.5 h-3.5" style={{ color: theme.primary }} />
           <span>{config.tag} • Batch Upload</span>
         </div>
       </div>
