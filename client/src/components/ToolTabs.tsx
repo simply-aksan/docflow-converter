@@ -54,37 +54,39 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({ activeTool, onSelectTool, di
   const currentTheme = TOOL_THEMES[activeTool];
 
   return (
-    <div className="flex items-center justify-center mb-6 overflow-x-auto py-1 px-1">
-      <div className="inline-flex p-1 bg-zinc-200/60 rounded-xl border border-[#E4E4E7] gap-1 transition-colors duration-200">
-        {tools.map((t) => {
-          const isActive = activeTool === t.id;
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              onClick={() => !disabled && onSelectTool(t.id)}
-              disabled={disabled}
-              style={
-                isActive
-                  ? {
-                      color: currentTheme.primary,
-                    }
-                  : undefined
-              }
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
-                isActive
-                  ? 'bg-white shadow-clean font-semibold'
-                  : 'text-[#52525B] hover:text-[#09090B] hover:bg-white/50'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Icon
-                className="w-3.5 h-3.5 transition-colors duration-200"
-                style={isActive ? { color: currentTheme.primary } : undefined}
-              />
-              <span>{t.label}</span>
-            </button>
-          );
-        })}
+    <div className="w-full mb-6 py-1">
+      <div className="w-full overflow-x-auto no-scrollbar flex sm:justify-center px-1">
+        <div className="inline-flex p-1 bg-zinc-200/60 rounded-xl border border-[#E4E4E7] gap-1 shrink-0 transition-colors duration-200">
+          {tools.map((t) => {
+            const isActive = activeTool === t.id;
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.id}
+                onClick={() => !disabled && onSelectTool(t.id)}
+                disabled={disabled}
+                style={
+                  isActive
+                    ? {
+                        color: currentTheme.primary,
+                      }
+                    : undefined
+                }
+                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-white shadow-clean font-semibold'
+                    : 'text-[#52525B] hover:text-[#09090B] hover:bg-white/50'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Icon
+                  className="w-3.5 h-3.5 shrink-0 transition-colors duration-200"
+                  style={isActive ? { color: currentTheme.primary } : undefined}
+                />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

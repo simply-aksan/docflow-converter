@@ -16,3 +16,12 @@
   background-image: radial-gradient(#d4d4d8 1px, transparent 1px);
   background-size: 16px 16px;
 }
+
+/* Sembunyikan scrollbar bawaan browser tapi tetap bisa di-scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
