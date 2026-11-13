@@ -4,18 +4,20 @@ import { Dropzone } from './components/Dropzone';
 import { FileCard } from './components/FileCard';
 import { BatchActionBar } from './components/BatchActionBar';
 import { TrustBadges } from './components/TrustBadges';
+import { ToolTabs } from './components/ToolTabs';
+import type { ToolType } from './components/ToolTabs';
 import type { BatchFileItem, ApiConvertResponse } from './types';
 import { API_BASE_URL } from './config';
-import { AlertCircle, FileCheck2, Info } from 'lucide-react';
+import { AlertCircle, Layers, Info } from 'lucide-react';
 
 export const App: React.FC = () => {
+  const [activeTool, setActiveTool] = useState<ToolType>('all');
   const [files, setFiles] = useState<BatchFileItem[]>([]);
   const [isConverting, setIsConverting] = useState(false);
   const [convertingSeconds, setConvertingSeconds] = useState(0);
   const [zipUrl, setZipUrl] = useState<string | undefined>(undefined);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  // Timer while converting to inform user during cold starts
   useEffect(() => {
     let timer: any = null;
     if (isConverting) {
@@ -59,7 +61,6 @@ export const App: React.FC = () => {
     setGlobalError(null);
     setZipUrl(undefined);
 
-    // Mark queued files as converting
     setFiles((prev) =>
       prev.map((item) => (item.status !== 'completed' ? { ...item, status: 'converting' } : item))
     );
@@ -84,7 +85,6 @@ export const App: React.FC = () => {
 
       const data: ApiConvertResponse = await response.json();
 
-      // Update state with results from API
       setFiles((prev) =>
         prev.map((item) => {
           const res = data.results.find((r) => r.original_name === item.name);
@@ -127,18 +127,21 @@ export const App: React.FC = () => {
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Hero Section */}
-        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+        <div className="text-center max-w-2xl mx-auto mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-200/70 text-zinc-800 text-xs font-mono font-medium mb-3">
-            <FileCheck2 className="w-3.5 h-3.5 text-zinc-700" />
-            <span>Word to PDF Document Utility</span>
+            <Layers className="w-3.5 h-3.5 text-zinc-700" />
+            <span>Universal Office to PDF Suite</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 mb-3">
-            Convert Word to PDF without losing your formatting.
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 mb-2">
+            Convert Office Documents to PDF.
           </h1>
           <p className="text-sm sm:text-base text-zinc-600 leading-relaxed">
-            Fast, faithful document rendering. Drop multiple Word documents, convert them in batch, and download them individually or as a single ZIP.
+            Convert Word documents, Excel spreadsheets, and PowerPoint presentations into crisp, printable PDFs with exact layout reproduction.
           </p>
         </div>
+
+        {/* Tool Switcher Tabs */}
+        <ToolTabs activeTool={activeTool} onSelectTool={setActiveTool} disabled={isConverting} />
 
         {/* Global Error Banner */}
         {globalError && (
@@ -150,7 +153,7 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Cold Start Notice (when conversion takes > 7 seconds) */}
+        {/* Cold Start Notice */}
         {isConverting && convertingSeconds > 7 && (
           <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-amber-900 text-xs font-mono">
             <Info className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
@@ -160,8 +163,8 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Dropzone */}
-        <Dropzone onFilesSelected={handleFilesSelected} isConverting={isConverting} />
+        {/* Adaptive Dropzone */}
+        <Dropzone activeTool={activeTool} onFilesSelected={handleFilesSelected} isConverting={isConverting} />
 
         {/* File Queue Section */}
         {files.length > 0 && (
@@ -210,8 +213,8 @@ export const App: React.FC = () => {
       {/* Minimalist Footer */}
       <footer className="border-t border-zinc-200/80 bg-white py-6 mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400 font-mono">
-          <div>DocFlow — Batch Document Conversion</div>
-          <div>Frontend: Vercel | Backend: Render (Docker)</div>
+          <div>DocFlow — Universal Document Converter</div>
+          <div>Word • Excel • PowerPoint to PDF</div>
         </div>
       </footer>
     </div>

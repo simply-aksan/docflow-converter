@@ -10,6 +10,11 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
+WORD_EXTENSIONS = {".docx", ".doc", ".rtf", ".odt", ".txt"}
+EXCEL_EXTENSIONS = {".xlsx", ".xls", ".csv", ".ods"}
+PPT_EXTENSIONS = {".pptx", ".ppt", ".odp"}
+ALL_SUPPORTED_EXTENSIONS = WORD_EXTENSIONS | EXCEL_EXTENSIONS | PPT_EXTENSIONS
+
 def find_libreoffice_binary() -> str | None:
     """Finds the LibreOffice executable in the system if present."""
     for cmd in ["libreoffice", "soffice"]:
@@ -27,8 +32,8 @@ def find_libreoffice_binary() -> str | None:
 
     return None
 
-def has_ms_word() -> bool:
-    """Checks if Microsoft Word COM is available on Windows."""
+def has_ms_office() -> bool:
+    """Checks if Microsoft Office COM is available on Windows."""
     if sys.platform != "win32":
         return False
     try:
@@ -51,8 +56,7 @@ def convert_single_with_libreoffice(
     timeout_seconds: int = 180
 ) -> str:
     """
-    Converts a single Word document to PDF using LibreOffice headless.
-    Uses an isolated user profile per file to guarantee zero lock collision and independent timeout.
+    Converts any Office document (Word, Excel, PowerPoint) to PDF using LibreOffice headless.
     """
     unique_id = uuid.uuid4().hex[:8]
     temp_profile_dir = Path(tempfile.gettempdir()) / f"lo_prof_{unique_id}"
@@ -76,7 +80,7 @@ def convert_single_with_libreoffice(
             str(out_dir.resolve()),
         ]
 
-        logger.info(f"Converting {input_file.name} ({input_file.stat().st_size / 1024 / 1024:.1f} MB) with timeout {timeout_seconds}s")
+        logger.info(f"Converting {input_file.name} via LibreOffice (timeout: {timeout_seconds}s)")
         
         try:
             result = subprocess.run(
@@ -109,42 +113,67 @@ def convert_single_with_libreoffice(
     finally:
         shutil.rmtree(temp_profile_dir, ignore_errors=True)
 
-def convert_single_with_ms_word(input_file: Path, expected_pdf: Path):
-    """Windows native Word automation fallback."""
+def convert_with_ms_office_windows(input_file: Path, expected_pdf: Path):
+    """Native Microsoft Office conversion on Windows for Word, Excel, and PowerPoint."""
     import pythoncom
     import win32com.client
 
-    pythoncom.CoInitialize()
-    word = None
-    doc = None
-    try:
-        word = win32com.client.DispatchEx("Word.Application")
-        word.Visible = False
-        word.DisplayAlerts = False
+    ext = input_file.suffix.lower()
+    abs_input = str(input_file.resolve())
+    abs_output = str(expected_pdf.resolve())
 
-        doc = word.Documents.Open(str(input_file.resolve()), ReadOnly=True)
-        # wdFormatPDF = 17
-        doc.SaveAs(str(expected_pdf.resolve()), FileFormat=17)
+    pythoncom.CoInitialize()
+    app = None
+    doc = None
+
+    try:
+        if ext in WORD_EXTENSIONS:
+            app = win32com.client.DispatchEx("Word.Application")
+            app.Visible = False
+            app.DisplayAlerts = False
+            doc = app.Documents.Open(abs_input, ReadOnly=True)
+            # wdFormatPDF = 17
+            doc.SaveAs(abs_output, FileFormat=17)
+
+        elif ext in EXCEL_EXTENSIONS:
+            app = win32com.client.DispatchEx("Excel.Application")
+            app.Visible = False
+            app.DisplayAlerts = False
+            doc = app.Workbooks.Open(abs_input, ReadOnly=True)
+            # xlTypePDF = 0
+            doc.ExportAsFixedFormat(0, abs_output)
+
+        elif ext in PPT_EXTENSIONS:
+            app = win32com.client.DispatchEx("PowerPoint.Application")
+            # PowerPoint Requires WithWindow=False for headless
+            doc = app.Presentations.Open(abs_input, ReadOnly=True, Untitled=False, WithWindow=False)
+            # ppSaveAsPDF = 32
+            doc.SaveAs(abs_output, 32)
+
+        else:
+            raise ValueError(f"Unsupported format for MS Office conversion: {ext}")
+
     finally:
         if doc is not None:
             try:
-                doc.Close(SaveChanges=False)
+                doc.Close()
             except Exception:
                 pass
-        if word is not None:
+        if app is not None:
             try:
-                word.Quit()
+                app.Quit()
             except Exception:
                 pass
         pythoncom.CoUninitialize()
 
 def convert_word_to_pdf(input_path: str, output_dir: str) -> str:
-    """Converts a single file to PDF."""
+    """
+    Universal Office Document to PDF converter (Word, Excel, PowerPoint).
+    """
     input_file = Path(input_path)
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Adaptive timeout based on file size: base 90s + 15s per MB (up to 300s max)
     file_size_mb = input_file.stat().st_size / (1024 * 1024)
     timeout = min(300, max(90, int(90 + (file_size_mb * 15))))
 
@@ -154,7 +183,7 @@ def convert_word_to_pdf(input_path: str, output_dir: str) -> str:
 
     if sys.platform == "win32":
         expected_pdf = out_dir / f"{input_file.stem}.pdf"
-        convert_single_with_ms_word(input_file, expected_pdf)
+        convert_with_ms_office_windows(input_file, expected_pdf)
         if expected_pdf.exists():
             return str(expected_pdf.resolve())
 

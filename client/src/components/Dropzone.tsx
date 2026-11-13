@@ -1,14 +1,51 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, FileType } from 'lucide-react';
+import type { ToolType } from './ToolTabs';
 
 interface DropzoneProps {
+  activeTool: ToolType;
   onFilesSelected: (files: File[]) => void;
   isConverting: boolean;
 }
 
-export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, isConverting }) => {
+export const Dropzone: React.FC<DropzoneProps> = ({ activeTool, onFilesSelected, isConverting }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getToolConfig = () => {
+    switch (activeTool) {
+      case 'word':
+        return {
+          title: 'Drop Word documents here, or browse',
+          subtitle: 'Supports multiple .docx, .doc, and .rtf files up to 50MB each.',
+          accept: '.docx,.doc,.rtf,.odt,.txt',
+          tag: 'Word to PDF',
+        };
+      case 'excel':
+        return {
+          title: 'Drop Excel spreadsheets here, or browse',
+          subtitle: 'Supports multiple .xlsx, .xls, and .csv files up to 50MB each.',
+          accept: '.xlsx,.xls,.csv,.ods',
+          tag: 'Excel to PDF',
+        };
+      case 'powerpoint':
+        return {
+          title: 'Drop PowerPoint presentations here, or browse',
+          subtitle: 'Supports multiple .pptx and .ppt files up to 50MB each.',
+          accept: '.pptx,.ppt,.odp',
+          tag: 'PowerPoint to PDF',
+        };
+      default:
+        return {
+          title: 'Drop any Office document here, or browse',
+          subtitle: 'Supports Word (.docx), Excel (.xlsx), and PowerPoint (.pptx) up to 50MB each.',
+          accept: '.docx,.doc,.rtf,.odt,.txt,.xlsx,.xls,.csv,.ods,.pptx,.ppt,.odp',
+          tag: 'Universal Office to PDF',
+        };
+    }
+  };
+
+  const config = getToolConfig();
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -35,7 +72,7 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, isConvertin
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
       onFilesSelected(selectedFiles);
-      e.target.value = ''; // Reset input to allow selecting same file again
+      e.target.value = '';
     }
   };
 
@@ -55,13 +92,12 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, isConvertin
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+        accept={config.accept}
         onChange={handleFileInputChange}
         className="hidden"
         disabled={isConverting}
       />
 
-      {/* Decorative dot matrix pattern */}
       <div className="absolute inset-0 dropzone-pattern opacity-40 pointer-events-none" />
 
       <div className="relative z-10 flex flex-col items-center">
@@ -72,15 +108,18 @@ export const Dropzone: React.FC<DropzoneProps> = ({ onFilesSelected, isConvertin
         </div>
 
         <h3 className="text-lg font-semibold text-zinc-900 mb-1 tracking-tight">
-          Drop your Word files here, or <span className="text-zinc-600 underline underline-offset-4 decoration-zinc-300 group-hover:decoration-zinc-700">browse</span>
+          {config.title.split('browse')[0]}
+          <span className="text-zinc-600 underline underline-offset-4 decoration-zinc-300 group-hover:decoration-zinc-700">
+            browse
+          </span>
         </h3>
-        <p className="text-xs text-zinc-500 max-w-sm mb-4">
-          Supports multiple <span className="font-mono font-medium text-zinc-700">.docx</span> and <span className="font-mono font-medium text-zinc-700">.doc</span> files up to 50MB each.
+        <p className="text-xs text-zinc-500 max-w-md mb-4">
+          {config.subtitle}
         </p>
 
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100/90 text-xs font-mono text-zinc-600 border border-zinc-200">
           <FileType className="w-3.5 h-3.5 text-zinc-500" />
-          <span>Batch upload enabled</span>
+          <span>{config.tag} • Batch Upload</span>
         </div>
       </div>
     </div>

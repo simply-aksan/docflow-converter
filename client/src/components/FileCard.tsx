@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, CheckCircle2, AlertCircle, Loader2, Download, Trash2, ArrowRight } from 'lucide-react';
+import { FileText, Table, Presentation, CheckCircle2, AlertCircle, Loader2, Download, Trash2, ArrowRight } from 'lucide-react';
 import type { BatchFileItem } from '../types';
 import { API_BASE_URL } from '../config';
 
@@ -17,6 +17,37 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   };
+
+  const ext = item.name.split('.').pop()?.toUpperCase() || 'DOC';
+
+  const getFormatBadge = () => {
+    const lower = item.name.toLowerCase();
+    if (lower.endsWith('.xlsx') || lower.endsWith('.xls') || lower.endsWith('.csv') || lower.endsWith('.ods')) {
+      return {
+        bg: 'bg-emerald-50 border-emerald-200/70 text-emerald-700',
+        badge: 'bg-emerald-600',
+        icon: Table,
+        label: ext,
+      };
+    }
+    if (lower.endsWith('.pptx') || lower.endsWith('.ppt') || lower.endsWith('.odp')) {
+      return {
+        bg: 'bg-orange-50 border-orange-200/70 text-orange-700',
+        badge: 'bg-orange-600',
+        icon: Presentation,
+        label: ext,
+      };
+    }
+    return {
+      bg: 'bg-blue-50 border-blue-200/70 text-blue-700',
+      badge: 'bg-blue-600',
+      icon: FileText,
+      label: ext,
+    };
+  };
+
+  const formatStyle = getFormatBadge();
+  const IconComponent = formatStyle.icon;
 
   const getStatusBadge = () => {
     switch (item.status) {
@@ -54,10 +85,10 @@ export const FileCard: React.FC<FileCardProps> = ({ item, onRemove, isGlobalConv
     <div className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-zinc-200/90 hover:border-zinc-300 shadow-clean transition-all duration-150">
       {/* File Info */}
       <div className="flex items-center gap-3.5 min-w-0">
-        <div className="relative shrink-0 w-11 h-11 rounded-lg bg-blue-50 border border-blue-200/70 text-blue-700 flex items-center justify-center font-bold text-xs">
-          <FileText className="w-5 h-5 stroke-[2]" />
-          <span className="absolute -bottom-1 -right-1 text-[9px] font-mono bg-blue-600 text-white px-1 rounded uppercase">
-            DOCX
+        <div className={`relative shrink-0 w-11 h-11 rounded-lg border flex items-center justify-center font-bold text-xs ${formatStyle.bg}`}>
+          <IconComponent className="w-5 h-5 stroke-[2]" />
+          <span className={`absolute -bottom-1 -right-1 text-[8px] font-mono text-white px-1 rounded uppercase ${formatStyle.badge}`}>
+            {formatStyle.label}
           </span>
         </div>
 

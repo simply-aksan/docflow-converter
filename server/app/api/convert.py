@@ -10,41 +10,41 @@ from app.config import settings
 from app.services.converter import (
     convert_word_to_pdf, 
     find_libreoffice_binary, 
-    has_ms_word
+    has_ms_office,
+    ALL_SUPPORTED_EXTENSIONS
 )
 from app.services.cleaner import cleanup_old_files
 
 router = APIRouter(prefix="/api", tags=["Converter"])
 
-ALLOWED_EXTENSIONS = {".docx", ".doc"}
-
-def validate_word_file(file: UploadFile):
+def validate_office_file(file: UploadFile):
     ext = Path(file.filename or "").suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
+    if ext not in ALL_SUPPORTED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file format '{ext}'. Allowed: .docx, .doc",
+            detail=f"Unsupported format '{ext}'. Supported: Word (.docx, .doc), Excel (.xlsx, .xls, .csv), PowerPoint (.pptx, .ppt)",
         )
 
 @router.get("/status")
 def get_service_status():
     """Checks service health and reports active conversion engine."""
     lo_bin = find_libreoffice_binary()
-    word_available = has_ms_word()
+    office_available = has_ms_office()
     
     if lo_bin:
         engine = "LibreOffice Headless (Docker)"
-    elif word_available:
-        engine = "Microsoft Word (Windows Native)"
+    elif office_available:
+        engine = "Microsoft Office (Windows Native)"
     else:
         engine = "None (Ready for Docker / Render)"
 
     return {
         "status": "online",
         "engine": engine,
-        "engine_installed": lo_bin is not None or word_available,
+        "engine_installed": lo_bin is not None or office_available,
         "libreoffice_path": lo_bin,
-        "ms_word_available": word_available
+        "ms_office_available": office_available,
+        "supported_formats": sorted(list(ALL_SUPPORTED_EXTENSIONS))
     }
 
 @router.post("/convert/single")
@@ -52,8 +52,8 @@ async def convert_single(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
-    """Converts a single Word document to PDF and streams the PDF directly."""
-    validate_word_file(file)
+    """Converts a single Office document to PDF and streams the PDF directly."""
+    validate_office_file(file)
     background_tasks.add_task(cleanup_old_files)
 
     job_id = str(uuid.uuid4())
@@ -97,8 +97,7 @@ async def convert_batch(
     files: List[UploadFile] = File(...)
 ):
     """
-    Converts multiple Word files with isolated execution per file.
-    Ensures that if one large file fails or times out, all other valid files succeed.
+    Converts multiple Office files (Word, Excel, PPT) with isolated execution per file.
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded.")
@@ -117,11 +116,11 @@ async def convert_batch(
         original_name = file.filename or "document.docx"
         ext = Path(original_name).suffix.lower()
 
-        if ext not in ALLOWED_EXTENSIONS:
+        if ext not in ALL_SUPPORTED_EXTENSIONS:
             results.append({
                 "original_name": original_name,
                 "status": "failed",
-                "error": f"Invalid format '{ext}'. Only .docx and .doc supported.",
+                "error": f"Invalid format '{ext}'. Supported: Word, Excel, PowerPoint.",
                 "download_url": None
             })
             continue
@@ -139,7 +138,6 @@ async def convert_batch(
                 continue
             await f_out.write(content)
 
-        # Convert each file with individual error handling and adaptive timeout
         try:
             pdf_path = convert_word_to_pdf(str(file_input_path), str(output_dir))
             pdf_filename = Path(pdf_path).name
