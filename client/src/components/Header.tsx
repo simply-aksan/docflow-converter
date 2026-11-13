@@ -1,25 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { API_BASE_URL } from '../config';
 
 export const Header: React.FC = () => {
-  const [engineName, setEngineName] = useState<string>('Detecting engine...');
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/status`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.engine) {
-          setEngineName(data.engine);
-        } else {
-          setEngineName('Engine Ready');
-        }
-      })
-      .catch(() => {
-        setEngineName('Engine Ready');
-      });
-  }, []);
-
   return (
     <header className="border-b border-[#E4E4E7] bg-white/80 backdrop-blur-md sticky top-0 z-30 transition-colors duration-200">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -34,19 +16,15 @@ export const Header: React.FC = () => {
             <span className="font-bold text-[#09090B] tracking-tight text-lg font-sans">
               Doc<span className="text-[#E11D48]">Flow</span>
             </span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 text-[#52525B] font-medium border border-[#E4E4E7]">
+              v1.0
+            </span>
           </div>
         </div>
 
-        {/* Status Badges */}
-        <div className="flex items-center gap-3 sm:gap-4 text-xs font-mono">
-          {/* Active Engine Badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E4E4E7] text-[#52525B]">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-            <span className="font-medium text-[#09090B]">{engineName}</span>
-          </div>
-
-          {/* Zero Retention Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D]">
+        {/* Right Side: Clean Privacy & Retention Badge */}
+        <div className="flex items-center">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D] text-xs font-mono">
             <ShieldCheck className="w-3.5 h-3.5 text-[#15803D]" />
             <span className="font-medium">Zero Retention</span>
           </div>
