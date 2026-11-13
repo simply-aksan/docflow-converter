@@ -9,7 +9,6 @@ from fastapi.responses import FileResponse
 from app.config import settings
 from app.services.converter import (
     convert_word_to_pdf, 
-    convert_batch_documents,
     find_libreoffice_binary, 
     has_ms_word
 )
@@ -53,9 +52,7 @@ async def convert_single(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...)
 ):
-    """
-    Converts a single Word document to PDF and streams the PDF directly.
-    """
+    """Converts a single Word document to PDF and streams the PDF directly."""
     validate_word_file(file)
     background_tasks.add_task(cleanup_old_files)
 
@@ -100,8 +97,8 @@ async def convert_batch(
     files: List[UploadFile] = File(...)
 ):
     """
-    Converts multiple Word files simultaneously in a single engine invocation.
-    Guarantees no user-profile collision and maximum conversion throughput.
+    Converts multiple Word files with isolated execution per file.
+    Ensures that if one large file fails or times out, all other valid files succeed.
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded.")
@@ -115,10 +112,7 @@ async def convert_batch(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
-    files_to_convert: List[Path] = []
-    failed_inputs = set()
 
-    # Step 1: Save all uploaded files to disk
     for file in files:
         original_name = file.filename or "document.docx"
         ext = Path(original_name).suffix.lower()
@@ -127,10 +121,9 @@ async def convert_batch(
             results.append({
                 "original_name": original_name,
                 "status": "failed",
-                "error": f"Invalid extension '{ext}'. Only .doc and .docx allowed.",
+                "error": f"Invalid format '{ext}'. Only .docx and .doc supported.",
                 "download_url": None
             })
-            failed_inputs.add(original_name)
             continue
 
         file_input_path = input_dir / original_name
@@ -140,53 +133,27 @@ async def convert_batch(
                 results.append({
                     "original_name": original_name,
                     "status": "failed",
-                    "error": f"File exceeds {settings.MAX_FILE_SIZE_MB}MB limit.",
+                    "error": f"File exceeds maximum allowed size of {settings.MAX_FILE_SIZE_MB}MB.",
                     "download_url": None
                 })
-                failed_inputs.add(original_name)
                 continue
             await f_out.write(content)
 
-        files_to_convert.append(file_input_path)
-
-    # Step 2: Convert all valid files in a single batch command
-    converted_map = {}
-    if files_to_convert:
+        # Convert each file with individual error handling and adaptive timeout
         try:
-            converted_map = convert_batch_documents(files_to_convert, str(output_dir), job_id)
-        except Exception as e:
-            # If batch process entirely failed, mark remaining as failed
-            for f in files_to_convert:
-                results.append({
-                    "original_name": f.name,
-                    "status": "failed",
-                    "error": str(e),
-                    "download_url": None
-                })
-            has_success = False
-            return {
-                "job_id": job_id,
-                "total_files": len(files),
-                "results": results,
-                "zip_download_url": None
-            }
-
-    # Step 3: Populate results for each converted file
-    for f in files_to_convert:
-        if f.name in converted_map:
-            pdf_path = converted_map[f.name]
+            pdf_path = convert_word_to_pdf(str(file_input_path), str(output_dir))
             pdf_filename = Path(pdf_path).name
             results.append({
-                "original_name": f.name,
+                "original_name": original_name,
                 "converted_name": pdf_filename,
                 "status": "success",
                 "download_url": f"/api/download/{job_id}/{pdf_filename}"
             })
-        else:
+        except Exception as e:
             results.append({
-                "original_name": f.name,
+                "original_name": original_name,
                 "status": "failed",
-                "error": "Document could not be converted to PDF.",
+                "error": str(e),
                 "download_url": None
             })
 

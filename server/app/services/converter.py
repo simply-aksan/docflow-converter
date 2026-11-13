@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 import shutil
 import subprocess
 import logging
@@ -43,24 +44,22 @@ def has_ms_word() -> bool:
     except Exception:
         return False
 
-def convert_batch_with_libreoffice(
-    input_files: List[Path], 
+def convert_single_with_libreoffice(
+    input_file: Path, 
     out_dir: Path, 
     soffice_bin: str, 
-    job_id: str,
-    timeout_seconds: int = 120
-) -> Dict[str, str]:
+    timeout_seconds: int = 180
+) -> str:
     """
-    Converts multiple Word documents in a single LibreOffice invocation.
-    Uses an isolated user profile per job to prevent lock collisions and maximize speed.
+    Converts a single Word document to PDF using LibreOffice headless.
+    Uses an isolated user profile per file to guarantee zero lock collision and independent timeout.
     """
-    # Create an isolated temporary user profile directory
-    temp_profile_dir = Path(tempfile.gettempdir()) / f"lo_profile_{job_id}"
+    unique_id = uuid.uuid4().hex[:8]
+    temp_profile_dir = Path(tempfile.gettempdir()) / f"lo_prof_{unique_id}"
     temp_profile_dir.mkdir(parents=True, exist_ok=True)
     profile_uri = temp_profile_dir.as_uri()
 
     try:
-        # Optimized headless command: loads all files at once, no splash, no lock check
         cmd = [
             soffice_bin,
             f"-env:UserInstallation={profile_uri}",
@@ -72,83 +71,66 @@ def convert_batch_with_libreoffice(
             "--nofirststartwizard",
             "--convert-to",
             "pdf",
+            str(input_file.resolve()),
+            "--outdir",
+            str(out_dir.resolve()),
         ]
-        # Append all input files
-        for f in input_files:
-            cmd.append(str(f.resolve()))
 
-        cmd.extend(["--outdir", str(out_dir.resolve())])
-
-        logger.info(f"Running optimized LibreOffice batch command for {len(input_files)} file(s)")
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=timeout_seconds,
-        )
+        logger.info(f"Converting {input_file.name} ({input_file.stat().st_size / 1024 / 1024:.1f} MB) with timeout {timeout_seconds}s")
+        
+        try:
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            size_mb = input_file.stat().st_size / (1024 * 1024)
+            raise TimeoutError(
+                f"Document ({size_mb:.1f} MB) took too long to convert on the server (exceeded {timeout_seconds}s limit)."
+            )
 
         if result.returncode != 0:
-            logger.warning(f"LibreOffice returned code {result.returncode}. Stderr: {result.stderr}")
+            logger.error(f"LibreOffice failed for {input_file.name}. Stderr: {result.stderr}")
+            raise RuntimeError(f"Conversion engine error: {result.stderr or 'Unknown error'}")
 
-        # Map input files to their generated output PDF
-        out_map = {}
-        for f in input_files:
-            expected_pdf = out_dir / f"{f.stem}.pdf"
-            if expected_pdf.exists():
-                out_map[f.name] = str(expected_pdf.resolve())
+        expected_pdf = out_dir / f"{input_file.stem}.pdf"
+        if not expected_pdf.exists():
+            candidates = list(out_dir.glob(f"*{input_file.stem}*.pdf"))
+            if candidates:
+                expected_pdf = candidates[0]
             else:
-                # Case-insensitive or space-adjusted fallback search
-                candidates = list(out_dir.glob(f"*{f.stem}*.pdf"))
-                if candidates:
-                    out_map[f.name] = str(candidates[0].resolve())
+                raise RuntimeError(f"PDF output was not generated for {input_file.name}.")
 
-        return out_map
+        return str(expected_pdf.resolve())
 
     finally:
-        # Cleanup temporary user profile directory
         shutil.rmtree(temp_profile_dir, ignore_errors=True)
 
-def convert_batch_with_ms_word(input_files: List[Path], out_dir: Path) -> Dict[str, str]:
-    """
-    Converts multiple Word files on Windows using a single Microsoft Word Application instance.
-    Keeps Word in memory for the duration of the batch, which is 10x faster than restarting Word.
-    """
+def convert_single_with_ms_word(input_file: Path, expected_pdf: Path):
+    """Windows native Word automation fallback."""
     import pythoncom
     import win32com.client
 
-    out_map = {}
     pythoncom.CoInitialize()
     word = None
-
+    doc = None
     try:
         word = win32com.client.DispatchEx("Word.Application")
         word.Visible = False
         word.DisplayAlerts = False
 
-        for f in input_files:
-            doc = None
-            try:
-                abs_input = str(f.resolve())
-                expected_pdf = out_dir / f"{f.stem}.pdf"
-                abs_output = str(expected_pdf.resolve())
-
-                doc = word.Documents.Open(abs_input, ReadOnly=True)
-                # wdFormatPDF = 17
-                doc.SaveAs(abs_output, FileFormat=17)
-                doc.Close(SaveChanges=False)
-                doc = None
-
-                if expected_pdf.exists():
-                    out_map[f.name] = str(expected_pdf.resolve())
-            except Exception as e:
-                logger.error(f"Failed to convert {f.name} with MS Word: {e}")
-                if doc is not None:
-                    try:
-                        doc.Close(SaveChanges=False)
-                    except Exception:
-                        pass
+        doc = word.Documents.Open(str(input_file.resolve()), ReadOnly=True)
+        # wdFormatPDF = 17
+        doc.SaveAs(str(expected_pdf.resolve()), FileFormat=17)
     finally:
+        if doc is not None:
+            try:
+                doc.Close(SaveChanges=False)
+            except Exception:
+                pass
         if word is not None:
             try:
                 word.Quit()
@@ -156,38 +138,24 @@ def convert_batch_with_ms_word(input_files: List[Path], out_dir: Path) -> Dict[s
                 pass
         pythoncom.CoUninitialize()
 
-    return out_map
-
-def convert_batch_documents(
-    input_files: List[Path], 
-    output_dir: str, 
-    job_id: str,
-    timeout_seconds: int = 120
-) -> Dict[str, str]:
-    """
-    Unified batch converter:
-    1. LibreOffice headless with single-invocation batching and profile isolation (Docker / Render / Linux).
-    2. Microsoft Word COM instance reuse (Windows Local Dev).
-    """
-    if not input_files:
-        return {}
-
+def convert_word_to_pdf(input_path: str, output_dir: str) -> str:
+    """Converts a single file to PDF."""
+    input_file = Path(input_path)
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Adaptive timeout based on file size: base 90s + 15s per MB (up to 300s max)
+    file_size_mb = input_file.stat().st_size / (1024 * 1024)
+    timeout = min(300, max(90, int(90 + (file_size_mb * 15))))
+
     soffice_bin = find_libreoffice_binary()
     if soffice_bin:
-        return convert_batch_with_libreoffice(input_files, out_dir, soffice_bin, job_id, timeout_seconds)
+        return convert_single_with_libreoffice(input_file, out_dir, soffice_bin, timeout_seconds=timeout)
 
     if sys.platform == "win32":
-        return convert_batch_with_ms_word(input_files, out_dir)
+        expected_pdf = out_dir / f"{input_file.stem}.pdf"
+        convert_single_with_ms_word(input_file, expected_pdf)
+        if expected_pdf.exists():
+            return str(expected_pdf.resolve())
 
-    raise RuntimeError("No conversion engine (LibreOffice or MS Word) available.")
-
-def convert_word_to_pdf(input_path: str, output_dir: str, timeout_seconds: int = 60) -> str:
-    """Single file wrapper around convert_batch_documents."""
-    f = Path(input_path)
-    res = convert_batch_documents([f], output_dir, job_id=f.stem, timeout_seconds=timeout_seconds)
-    if f.name in res:
-        return res[f.name]
-    raise RuntimeError("Failed to generate PDF.")
+    raise RuntimeError("No conversion engine available.")
