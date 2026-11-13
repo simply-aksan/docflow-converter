@@ -8,6 +8,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks,
 from fastapi.responses import FileResponse, StreamingResponse
 from app.config import settings
 from app.services.converter import convert_word_to_pdf, find_libreoffice_binary, has_ms_word
+from app.services.cleaner import cleanup_old_files
 
 router = APIRouter(prefix="/api", tags=["Converter"])
 
