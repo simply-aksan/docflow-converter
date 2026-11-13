@@ -34,9 +34,6 @@ export const Header: React.FC = () => {
             <span className="font-bold text-[#09090B] tracking-tight text-lg font-sans">
               Doc<span className="text-[#E11D48]">Flow</span>
             </span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 text-[#52525B] font-medium border border-[#E4E4E7]">
-              v1.0
-            </span>
           </div>
         </div>
 
